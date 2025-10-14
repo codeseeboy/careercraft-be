@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skin Analysis API Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .error {
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #eee;
+            border: 1px solid #ddd;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .conditions {
+            margin-top: 15px;
+        }
+        .condition {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .condition-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .confidence {
+            background-color: #f1c40f;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .confidence.high {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .confidence.low {
+            background-color: #e67e22;
+            color: white;
+        }
+        .severity {
+            margin-left: 10px;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .severity.mild {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+        .severity.moderate {
+            background-color: #fef9e7;
+            color: #d35400;
+        }
+        .severity.severe {
+            background-color: #fdedec;
+            color: #c0392b;
+        }
+        .recommendations {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .recommendations li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .recommendations li:last-child {
+            border-bottom: none;
+        }
+        pre {
+            overflow-x: auto;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Skin Analysis API Tester</h1>
+    <p>Upload a skin image or provide a base64-encoded image to analyze for potential skin conditions.</p>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="file-upload">File Upload</div>
+        <div class="tab" data-tab="base64">Base64 Image</div>
+        <div class="tab" data-tab="raw-json">Raw JSON</div>
+    </div>
+
+    <div class="tab-content active" id="file-upload">
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="imageFile">Upload Skin Image (jpg, png, webp):</label>
+                <input type="file" id="imageFile" accept="image/jpeg,image/jpg,image/png,image/webp">
+            </div>
+            
+            <div class="form-group">
+                <label for="userId">User ID (optional):</label>
+                <input type="text" id="userId" placeholder="user_12345">
+            </div>
+            
+            <div id="imagePreviewContainer" style="display:none;">
+                <h3>Image Preview</h3>
+                <img id="imagePreview" class="image-preview" />
+            </div>
+            
+            <button type="submit">Analyze Image</button>
+        </form>
+    </div>
+
+    <div class="tab-content" id="base64">
+        <form id="base64Form">
+            <div class="form-group">
+                <label for="base64Image">Base64 Image Data:</label>
+                <textarea id="base64Image" placeholder="Paste base64 encoded image data here"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="imageFormat">Image Format:</label>
+                <select id="imageFormat">
+                    <option value="jpg">JPEG/JPG</option>
+                    <option value="png">PNG</option>
+                    <option value="webp">WebP</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="userIdBase64">User ID (optional):</label>
+                <input type="text" id="userIdBase64" placeholder="user_12345">
+            </div>
+            
+            <div id="base64PreviewContainer" style="display:none;">
+                <h3>Image Preview</h3>
+                <img id="base64Preview" class="image-preview" />
+            </div>
+            
+            <button type="submit">Analyze Image</button>
+        </form>
+    </div>
+
+    <div class="tab-content" id="raw-json">
+        <form id="rawJsonForm">
+            <div class="form-group">
+                <label for="rawJson">Raw JSON Request:</label>
+                <textarea id="rawJson" placeholder='{"image": "base64_string_here", "format": "jpg", "userId": "user_12345"}'></textarea>
+            </div>
+            
+            <button type="submit">Send Request</button>
+        </form>
+    </div>
+
+    <div id="result" class="result" style="display:none;">
+        <h2>Analysis Results</h2>
+        <div id="resultContent"></div>
+        
+        <div id="conditionsContainer" style="display:none;">
+            <h3>Identified Conditions</h3>
+            <div id="conditions" class="conditions"></div>
+        </div>
+        
+        <div id="recommendationsContainer" style="display:none;">
+            <h3>Recommendations</h3>
+            <ul id="recommendations" class="recommendations"></ul>
+        </div>
+        
+        <div id="metadataContainer" style="display:none;">
+            <h3>Metadata</h3>
+            <div id="metadata"></div>
+        </div>
+        
+        <h3>Full Response</h3>
+        <pre id="rawResponse"></pre>
+    </div>
+
+    <script>
+        // Tab handling
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Show selected tab content
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // File upload preview
+        const imageFile = document.getElementById('imageFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        
+        imageFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Base64 preview
+        const base64Image = document.getElementById('base64Image');
+        const base64Preview = document.getElementById('base64Preview');
+        const base64PreviewContainer = document.getElementById('base64PreviewContainer');
+        
+        base64Image.addEventListener('input', function() {
+            try {
+                const base64Value = this.value.trim();
+                if (base64Value) {
+                    // Try to determine if it's a full data URL or just the base64 string
+                    let src;
+                    if (base64Value.startsWith('data:image')) {
+                        src = base64Value;
+                    } else {
+                        // Assume it's a raw base64 string
+                        src = `data:image/${document.getElementById('imageFormat').value};base64,${base64Value}`;
+                    }
+                    base64Preview.src = src;
+                    base64PreviewContainer.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Invalid base64 string', error);
+            }
+        });
+        
+        // File Upload Form
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('imageFile');
+            const userId = document.getElementById('userId').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showError('Please select an image file');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            if (userId) {
+                formData.append('userId', userId);
+            }
+            
+            formData.append('timestamp', new Date().toISOString());
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/skin/analyze-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            }
+        });
+        
+        // Base64 Form
+        document.getElementById('base64Form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const base64Data = document.getElementById('base64Image').value;
+            const format = document.getElementById('imageFormat').value;
+            const userId = document.getElementById('userIdBase64').value;
+            
+            if (!base64Data) {
+                showError('Please provide base64 image data');
+                return;
+            }
+            
+            // Extract the base64 string if a data URL was pasted
+            let imageBase64 = base64Data;
+            if (base64Data.startsWith('data:image')) {
+                const parts = base64Data.split(',');
+                if (parts.length === 2) {
+                    imageBase64 = parts[1];
+                }
+            }
+            
+            const requestData = {
+                image: imageBase64,
+                format: format,
+                timestamp: new Date().toISOString()
+            };
+            
+            if (userId) {
+                requestData.userId = userId;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/skin/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            }
+        });
+        
+        // Raw JSON Form
+        document.getElementById('rawJsonForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const rawJsonText = document.getElementById('rawJson').value;
+            
+            if (!rawJsonText) {
+                showError('Please provide JSON data');
+                return;
+            }
+            
+            let jsonData;
+            try {
+                jsonData = JSON.parse(rawJsonText);
+            } catch (error) {
+                showError('Invalid JSON format');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/skin/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: rawJsonText
+                });
+                
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            }
+        });
+        
+        function showLoading() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<h2>Analyzing Image...</h2><p>Please wait, this may take a few seconds.</p>';
+        }
+        
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.classList.add('error');
+            resultDiv.innerHTML = `<h2>Error</h2><p>${message}</p>`;
+        }
+        
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.classList.remove('error');
+            
+            // Display raw response
+            document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+            
+            // Clear previous results
+            document.getElementById('resultContent').innerHTML = '';
+            document.getElementById('conditions').innerHTML = '';
+            document.getElementById('recommendations').innerHTML = '';
+            document.getElementById('metadata').innerHTML = '';
+            
+            if (data.success) {
+                document.getElementById('resultContent').innerHTML = `<p>Analysis completed successfully!</p>`;
+                
+                // Display conditions
+                if (data.results && data.results.length > 0) {
+                    document.getElementById('conditionsContainer').style.display = 'block';
+                    const conditionsContainer = document.getElementById('conditions');
+                    
+                    data.results.forEach(condition => {
+                        const confidencePercentage = Math.round(condition.confidence * 100);
+                        let confidenceClass = '';
+                        
+                        if (condition.confidence >= 0.7) {
+                            confidenceClass = 'high';
+                        } else if (condition.confidence < 0.4) {
+                            confidenceClass = 'low';
+                        }
+                        
+                        const conditionElement = document.createElement('div');
+                        conditionElement.className = 'condition';
+                        conditionElement.innerHTML = `
+                            <div class="condition-header">
+                                <h4>${condition.condition}</h4>
+                                <div>
+                                    <span class="confidence ${confidenceClass}">${confidencePercentage}% confidence</span>
+                                    <span class="severity ${condition.severity}">${condition.severity}</span>
+                                </div>
+                            </div>
+                            ${condition.description ? `<p>${condition.description}</p>` : ''}
+                        `;
+                        
+                        conditionsContainer.appendChild(conditionElement);
+                    });
+                } else {
+                    document.getElementById('conditionsContainer').style.display = 'block';
+                    document.getElementById('conditions').innerHTML = '<p>No specific skin conditions detected.</p>';
+                }
+                
+                // Hide recommendations section if they don't exist in response
+                document.getElementById('recommendationsContainer').style.display = 'none';
+                
+                // If we have recommendations data
+                if (data.recommendations && data.recommendations.length > 0) {
+                    document.getElementById('recommendationsContainer').style.display = 'block';
+                    const recommendationsContainer = document.getElementById('recommendations');
+                    
+                    // Clear existing recommendations
+                    recommendationsContainer.innerHTML = '';
+                    
+                    data.recommendations.forEach(recommendation => {
+                        const li = document.createElement('li');
+                        li.textContent = recommendation;
+                        recommendationsContainer.appendChild(li);
+                    });
+                }
+                
+                // Display metadata
+                if (data.metadata) {
+                    document.getElementById('metadataContainer').style.display = 'block';
+                    const metadataContainer = document.getElementById('metadata');
+                    
+                    metadataContainer.innerHTML = `
+                        <p><strong>Processing Time:</strong> ${data.metadata.processingTimeMs}ms</p>
+                        <p><strong>Model Version:</strong> ${data.metadata.modelVersion}</p>
+                        <p><strong>Timestamp:</strong> ${data.metadata.timestamp}</p>
+                    `;
+                }
+            } else {
+                // Error result
+                document.getElementById('resultContent').innerHTML = `
+                    <p>Analysis failed: ${data.error || 'Unknown error'}</p>
+                    <p>${data.message || ''}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
