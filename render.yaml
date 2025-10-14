@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: careercraft-backend
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MAGICAL_API_KEY
+        sync: false
+      - key: MAGICAL_REVIEW_URL
+        value: https://gw.magicalapi.com/resume-review
+      - key: MAGICAL_SCORE_URL
+        value: https://gw.magicalapi.com/resume-score
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: APPWRITE_PROJECT_ID
+        sync: false
+      - key: APPWRITE_API_KEY
+        sync: false
+      - key: APPWRITE_ENDPOINT
+        value: https://fra.cloud.appwrite.io/v1
+      - key: APPWRITE_BUCKET_ID
+        sync: false
