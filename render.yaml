@@ -3,14 +3,9 @@ services:
     name: careercraft-backend
     env: node
     plan: free
-    buildCommand: npm run build && npm run verify
+    buildCommand: npm install && npx tsc
     startCommand: npm start
     nodeVersion: 18.x
-    buildFilter:
-      paths:
-        - src/**/*.ts
-        - package.json
-        - tsconfig.json
     envVars:
       - key: NODE_ENV
         value: production

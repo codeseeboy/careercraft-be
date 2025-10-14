@@ -3,7 +3,7 @@
 my-app/node_modules
 
 # production build
-/dist
+# /dist  # Comment out to ensure dist folder is included in git
 /build
 
 # environment variables

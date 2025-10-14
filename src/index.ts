@@ -17,7 +17,7 @@ const app = express();
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: ['http://localhost:5000'], // Allow only the frontend on port 5000
+  origin: ['http://localhost:5000', 'https://careercraft-be.onrender.com', /\.onrender\.com$/], // Allow localhost and Render domains
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
