@@ -2,8 +2,9 @@ services:
   - type: web
     name: careercraft-backend
     env: node
-    buildCommand: npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm start
+    nodeVersion: 18.x
     envVars:
       - key: NODE_ENV
         value: production
