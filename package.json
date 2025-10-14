@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "Backend for Magical API integration with Appwrite file uploads for resume review and scoring",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
     "clean": "rm -rf dist || rmdir /s /q dist",
     "build": "npm ci && npm run clean && tsc",
     "postbuild": "cp -r src/data dist/ || xcopy /s /y src\\data dist\\data\\ || true",
+    "verify": "sh ./verify-build.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
