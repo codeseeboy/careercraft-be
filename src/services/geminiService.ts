@@ -216,3 +216,98 @@ export const analyzeSkinCondition = async (params: SkinAnalysisParams): Promise<
         throw new Error('Failed to analyze skin image');
     }
 };
+
+interface SymptomAnalysisParams {
+    symptoms: string;
+    additionalInfo?: {
+        age?: number;
+        gender?: string;
+        existingConditions?: string[];
+        currentMedications?: string[];
+    };
+    userId?: string;
+    timestamp?: string;
+}
+
+interface SymptomAnalysisResult {
+    extractedSymptoms: Array<{
+        name: string;
+        severity?: string;
+        duration?: string;
+    }>;
+    possibleConditions: Array<{
+        name: string;
+        probability: number;
+        urgency: string;
+        description: string;
+    }>;
+    specialistRecommendation?: string;
+    urgencyLevel: string;
+    recommendations: string[];
+    followUpQuestions?: string[];
+}
+
+/**
+ * Feature 6: Analyze symptoms and provide health insights.
+ */
+export const analyzeSymptoms = async (params: SymptomAnalysisParams): Promise<SymptomAnalysisResult> => {
+    try {
+        const { symptoms, additionalInfo } = params;
+        
+        // Create a detailed prompt for Gemini
+        let additionalInfoText = '';
+        if (additionalInfo) {
+            additionalInfoText = `
+                Additional Information:
+                ${additionalInfo.age ? `Age: ${additionalInfo.age}` : ''}
+                ${additionalInfo.gender ? `Gender: ${additionalInfo.gender}` : ''}
+                ${additionalInfo.existingConditions ? `Existing Conditions: ${additionalInfo.existingConditions.join(', ')}` : ''}
+                ${additionalInfo.currentMedications ? `Current Medications: ${additionalInfo.currentMedications.join(', ')}` : ''}
+            `;
+        }
+        
+        const prompt = `
+            You are SymptoCare.AI, a healthcare symptom analysis assistant. Your task is to analyze the following symptoms and provide informational guidance.
+            
+            Based on the description below, extract key symptoms, suggest possible conditions, provide relevant recommendations, and follow-up questions.
+            
+            Your response must be a single, minified JSON object with the following structure:
+            {
+                "extractedSymptoms": [
+                    {"name": "symptom", "severity": "mild/moderate/severe", "duration": "time period if mentioned"}
+                ],
+                "possibleConditions": [
+                    {"name": "condition name", "probability": 0.8, "urgency": "low/moderate/high", "description": "brief description"}
+                ],
+                "specialistRecommendation": "type of doctor if appropriate",
+                "urgencyLevel": "low/moderate/high",
+                "recommendations": ["specific actionable recommendation", "..."],
+                "followUpQuestions": ["relevant follow-up question", "..."]
+            }
+            
+            Important guidelines:
+            - Prioritize conditions based on symptom matching, not just severity
+            - Be informative but clear this is not a diagnosis
+            - Include 3-7 specific, actionable recommendations
+            - Assign urgency level based on potential severity and acuity
+            - For any potentially serious conditions, always recommend consulting a healthcare provider
+            - Probability should range from 0-1, with higher numbers for better symptom matches
+            
+            Symptoms: "${symptoms}"
+            ${additionalInfoText}
+        `;
+        
+        // Generate content from Gemini
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        
+        // Clean and parse the response text to extract the JSON
+        const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        const jsonData = JSON.parse(text);
+        
+        return jsonData;
+    } catch (error) {
+        console.error('Symptom analysis failed:', error);
+        throw new Error('Failed to analyze symptoms');
+    }
+};

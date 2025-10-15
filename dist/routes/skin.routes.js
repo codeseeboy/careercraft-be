@@ -41,6 +41,7 @@ const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const skinController = __importStar(require("../controllers/skinController"));
+const skinHistoryController_1 = require("../controllers/skinHistoryController");
 const router = express_1.default.Router();
 // Configure storage for uploaded files
 const storage = multer_1.default.diskStorage({
@@ -83,5 +84,10 @@ router.post('/analyze', skinController.analyzeSkin);
 router.get('/', (req, res) => {
     res.json({ message: 'Skin Analysis API is running' });
 });
+// Route to get skin analysis history for a user
+router.get('/history/:userId', skinHistoryController_1.getSkinAnalysisHistory);
+router.get('/history', skinHistoryController_1.getSkinAnalysisHistory); // Alternative with query param
+// Route to get a specific skin analysis record
+router.get('/analysis/:id', skinHistoryController_1.getSkinAnalysisDetail);
 exports.default = router;
 //# sourceMappingURL=skin.routes.js.map

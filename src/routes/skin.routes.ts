@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import * as skinController from '../controllers/skinController';
+import { getSkinAnalysisHistory, getSkinAnalysisDetail } from '../controllers/skinHistoryController';
 
 const router = express.Router();
 
@@ -54,5 +55,12 @@ router.post('/analyze', skinController.analyzeSkin);
 router.get('/', (req, res) => {
   res.json({ message: 'Skin Analysis API is running' });
 });
+
+// Route to get skin analysis history for a user
+router.get('/history/:userId', getSkinAnalysisHistory);
+router.get('/history', getSkinAnalysisHistory); // Alternative with query param
+
+// Route to get a specific skin analysis record
+router.get('/analysis/:id', getSkinAnalysisDetail);
 
 export default router;

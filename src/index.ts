@@ -11,6 +11,8 @@ import jobRoutes from "./routes/job.routes";
 import careerRoutes from "./routes/career.routes";
 import chatRoutes from "./routes/chat.routes";
 import skinRoutes from "./routes/skin.routes";
+import datRoutes from "./routes/dat.routes";
+import symptocareRoutes from "./routes/symptocare.routes";
 
 dotenv.config();
 const app = express();
@@ -37,6 +39,8 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/career", careerRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/skin", skinRoutes);
+app.use("/api/dat", datRoutes);
+app.use("/api/symptocare", symptocareRoutes);
 
 
 // Serve the index.html file for the root route

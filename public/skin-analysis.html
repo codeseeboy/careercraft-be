@@ -166,6 +166,7 @@
         <div class="tab active" data-tab="file-upload">File Upload</div>
         <div class="tab" data-tab="base64">Base64 Image</div>
         <div class="tab" data-tab="raw-json">Raw JSON</div>
+        <div class="tab" data-tab="debug">Debug</div>
     </div>
 
     <div class="tab-content active" id="file-upload">
@@ -230,6 +231,25 @@
         </form>
     </div>
 
+    <div class="tab-content" id="debug">
+        <h3>Debug Information</h3>
+        <div class="form-group">
+            <label>Debug Options:</label>
+            <div>
+                <input type="checkbox" id="debugEnabled" checked>
+                <label for="debugEnabled">Enable Debug Logging</label>
+            </div>
+            <div>
+                <input type="checkbox" id="verboseLogging">
+                <label for="verboseLogging">Verbose Logging</label>
+            </div>
+        </div>
+        <button onclick="clearDebugLog()" style="background-color: #e74c3c;">Clear Log</button>
+        <div id="debugContent" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 12px; background-color: #f8f8f8;">
+            <!-- Debug logs will appear here -->
+        </div>
+    </div>
+
     <div id="result" class="result" style="display:none;">
         <h2>Analysis Results</h2>
         <div id="resultContent"></div>
@@ -249,16 +269,50 @@
             <div id="metadata"></div>
         </div>
         
+        <div id="debugInfo" style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">
+            <h3>Debug Information</h3>
+            <div id="debugContent" style="font-family: monospace; font-size: 12px;"></div>
+        </div>
+        
         <h3>Full Response</h3>
         <pre id="rawResponse"></pre>
     </div>
 
     <script>
+        // Debug helper function
+        function debug(message, data = null) {
+            const timestamp = new Date().toISOString().substring(11, 23);
+            const debugContent = document.getElementById('debugContent');
+            const logItem = document.createElement('div');
+            
+            if (data) {
+                console.log(`[${timestamp}] ${message}`, data);
+                let dataStr;
+                try {
+                    dataStr = typeof data === 'object' ? JSON.stringify(data) : String(data);
+                } catch (e) {
+                    dataStr = '[Object cannot be stringified]';
+                }
+                logItem.innerHTML = `<span style="color:#888;">[${timestamp}]</span> <span style="color:#070;">${message}</span>: <span style="color:#00c;">${dataStr}</span>`;
+            } else {
+                console.log(`[${timestamp}] ${message}`);
+                logItem.innerHTML = `<span style="color:#888;">[${timestamp}]</span> ${message}`;
+            }
+            
+            if (debugContent) {
+                debugContent.insertBefore(logItem, debugContent.firstChild);
+            }
+        }
+    
         // Tab handling
+        debug("Initializing skin analysis page");
         const tabs = document.querySelectorAll('.tab');
+        debug(`Found ${tabs.length} tabs`);
+        
         tabs.forEach(tab => {
             tab.addEventListener('click', function() {
                 const tabId = this.getAttribute('data-tab');
+                debug(`Tab clicked: ${tabId}`);
                 
                 // Remove active class from all tabs
                 tabs.forEach(t => t.classList.remove('active'));
@@ -272,7 +326,13 @@
                 });
                 
                 // Show selected tab content
-                document.getElementById(tabId).classList.add('active');
+                const selectedTab = document.getElementById(tabId);
+                if (selectedTab) {
+                    selectedTab.classList.add('active');
+                    debug(`Activated tab content: ${tabId}`);
+                } else {
+                    debug(`ERROR: Tab content not found: ${tabId}`, 'error');
+                }
             });
         });
         
@@ -456,73 +516,159 @@
         }
         
         function showResult(data) {
+            console.log("showResult called with data:", data);
+            
             const resultDiv = document.getElementById('result');
+            console.log("Result div:", resultDiv);
             resultDiv.style.display = 'block';
             resultDiv.classList.remove('error');
             
             // Display raw response
-            document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+            const rawResponseEl = document.getElementById('rawResponse');
+            debug("Raw response element:", rawResponseEl);
+            
+            if (rawResponseEl) {
+                rawResponseEl.textContent = JSON.stringify(data, null, 2);
+            } else {
+                debug("ERROR: rawResponse element is null!", "error");
+            }
+            
+            // Safely get elements and clear them
+            const clearElement = (id) => {
+                const el = document.getElementById(id);
+                console.log(`Getting element #${id}:`, el);
+                if (el) {
+                    el.innerHTML = '';
+                } else {
+                    console.error(`Element #${id} not found!`);
+                }
+                return el;
+            };
             
             // Clear previous results
-            document.getElementById('resultContent').innerHTML = '';
-            document.getElementById('conditions').innerHTML = '';
-            document.getElementById('recommendations').innerHTML = '';
-            document.getElementById('metadata').innerHTML = '';
+            clearElement('resultContent').innerHTML = '';
+            clearElement('conditions').innerHTML = '';
+            const recommendationsEl = clearElement('recommendations');
+            clearElement('metadata').innerHTML = '';
             
             if (data.success) {
-                document.getElementById('resultContent').innerHTML = `<p>Analysis completed successfully!</p>`;
+                console.log("Analysis successful, updating UI");
+                const resultContentEl = document.getElementById('resultContent');
+                if (resultContentEl) {
+                    resultContentEl.innerHTML = `<p>Analysis completed successfully!</p>`;
+                }
                 
                 // Display conditions
                 if (data.results && data.results.length > 0) {
-                    document.getElementById('conditionsContainer').style.display = 'block';
-                    const conditionsContainer = document.getElementById('conditions');
+                    console.log(`Processing ${data.results.length} conditions`);
+                    const conditionsContainerEl = document.getElementById('conditionsContainer');
+                    if (conditionsContainerEl) {
+                        conditionsContainerEl.style.display = 'block';
+                    }
                     
-                    data.results.forEach(condition => {
-                        const confidencePercentage = Math.round(condition.confidence * 100);
-                        let confidenceClass = '';
-                        
-                        if (condition.confidence >= 0.7) {
-                            confidenceClass = 'high';
-                        } else if (condition.confidence < 0.4) {
-                            confidenceClass = 'low';
-                        }
-                        
-                        const conditionElement = document.createElement('div');
-                        conditionElement.className = 'condition';
-                        conditionElement.innerHTML = `
-                            <div class="condition-header">
-                                <h4>${condition.condition}</h4>
-                                <div>
-                                    <span class="confidence ${confidenceClass}">${confidencePercentage}% confidence</span>
-                                    <span class="severity ${condition.severity}">${condition.severity}</span>
+                    const conditionsContainer = document.getElementById('conditions');
+                    if (conditionsContainer) {
+                        data.results.forEach((condition, index) => {
+                            console.log(`Processing condition ${index + 1}:`, condition);
+                            const confidencePercentage = Math.round(condition.confidence * 100);
+                            let confidenceClass = '';
+                            
+                            if (condition.confidence >= 0.7) {
+                                confidenceClass = 'high';
+                            } else if (condition.confidence < 0.4) {
+                                confidenceClass = 'low';
+                            }
+                            
+                            const conditionElement = document.createElement('div');
+                            conditionElement.className = 'condition';
+                            conditionElement.innerHTML = `
+                                <div class="condition-header">
+                                    <h4>${condition.condition}</h4>
+                                    <div>
+                                        <span class="confidence ${confidenceClass}">${confidencePercentage}% confidence</span>
+                                        <span class="severity ${condition.severity}">${condition.severity}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            ${condition.description ? `<p>${condition.description}</p>` : ''}
-                        `;
-                        
-                        conditionsContainer.appendChild(conditionElement);
-                    });
+                                ${condition.description ? `<p>${condition.description}</p>` : ''}
+                            `;
+                            
+                            conditionsContainer.appendChild(conditionElement);
+                        });
+                    }
                 } else {
-                    document.getElementById('conditionsContainer').style.display = 'block';
-                    document.getElementById('conditions').innerHTML = '<p>No specific skin conditions detected.</p>';
+                    console.log("No conditions detected");
+                    const conditionsContainerEl = document.getElementById('conditionsContainer');
+                    if (conditionsContainerEl) {
+                        conditionsContainerEl.style.display = 'block';
+                    }
+                    
+                    const conditionsEl = document.getElementById('conditions');
+                    if (conditionsEl) {
+                        conditionsEl.innerHTML = '<p>No specific skin conditions detected.</p>';
+                    }
                 }
                 
-                // Hide recommendations section if they don't exist in response
-                document.getElementById('recommendationsContainer').style.display = 'none';
+                // Handle recommendations - with improved error handling
+                debug("Handling recommendations", data.recommendations);
                 
-                // If we have recommendations data
-                if (data.recommendations && data.recommendations.length > 0) {
-                    document.getElementById('recommendationsContainer').style.display = 'block';
-                    const recommendationsContainer = document.getElementById('recommendations');
+                try {
+                    // First hide the recommendations container
+                    const recommendationsContainerEl = document.getElementById('recommendationsContainer');
+                    debug("Recommendations container element:", recommendationsContainerEl);
                     
-                    // Clear existing recommendations
-                    recommendationsContainer.innerHTML = '';
+                    if (!recommendationsContainerEl) {
+                        debug("ERROR: Recommendations container element not found!", "error");
+                        throw new Error("Could not find recommendations container");
+                    }
                     
-                    data.recommendations.forEach(recommendation => {
-                        const li = document.createElement('li');
-                        li.textContent = recommendation;
-                        recommendationsContainer.appendChild(li);
-                    });
+                    recommendationsContainerEl.style.display = 'none';
+                    
+                    // If we have recommendations data
+                    if (data.recommendations && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
+                        debug(`Found ${data.recommendations.length} recommendations`);
+                        
+                        recommendationsContainerEl.style.display = 'block';
+                        
+                        const recommendationsContainer = document.getElementById('recommendations');
+                        debug("Recommendations list element:", recommendationsContainer);
+                        
+                        if (!recommendationsContainer) {
+                            debug("ERROR: Recommendations list element not found!", "error");
+                            throw new Error("Could not find recommendations list container");
+                        }
+                        
+                        // Clear existing recommendations
+                        recommendationsContainer.innerHTML = '';
+                        
+                        // Add each recommendation
+                        data.recommendations.forEach((recommendation, index) => {
+                            debug(`Adding recommendation ${index + 1}:`, recommendation);
+                            const li = document.createElement('li');
+                            // Check if recommendation is valid
+                            if (recommendation !== null && recommendation !== undefined) {
+                                li.textContent = recommendation.toString(); // Convert to string just in case
+                            } else {
+                                li.textContent = "No specific recommendation provided";
+                                debug(`Warning: Recommendation ${index + 1} was null or undefined`);
+                            }
+                            recommendationsContainer.appendChild(li);
+                            debug(`Successfully added recommendation ${index + 1}`);
+                        });
+                    } else {
+                        debug("No recommendations found in the response or invalid format");
+                        // Display a placeholder message instead of leaving it empty
+                        if (recommendationsContainerEl) {
+                            recommendationsContainerEl.style.display = 'block';
+                            const recommendationsContainer = document.getElementById('recommendations');
+                            if (recommendationsContainer) {
+                                recommendationsContainer.innerHTML = '<li>No specific recommendations available</li>';
+                                debug("Added placeholder recommendation");
+                            }
+                        }
+                    }
+                } catch (err) {
+                    debug("ERROR in recommendations handling", err);
+                    console.error("Error handling recommendations:", err);
                 }
                 
                 // Display metadata
@@ -530,11 +676,22 @@
                     document.getElementById('metadataContainer').style.display = 'block';
                     const metadataContainer = document.getElementById('metadata');
                     
-                    metadataContainer.innerHTML = `
+                    let metadataHtml = `
                         <p><strong>Processing Time:</strong> ${data.metadata.processingTimeMs}ms</p>
                         <p><strong>Model Version:</strong> ${data.metadata.modelVersion}</p>
                         <p><strong>Timestamp:</strong> ${data.metadata.timestamp}</p>
                     `;
+                    
+                    // Add database ID if available
+                    if (data.metadata.databaseId) {
+                        metadataHtml += `
+                            <p><strong>Saved to Database:</strong> Yes</p>
+                            <p><strong>Database ID:</strong> ${data.metadata.databaseId}</p>
+                        `;
+                        debug("Analysis results saved to database with ID: " + data.metadata.databaseId);
+                    }
+                    
+                    metadataContainer.innerHTML = metadataHtml;
                 }
             } else {
                 // Error result

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TablesDB API Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+            display: none;
+        }
+        .error {
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+        pre {
+            overflow-x: auto;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .action-buttons {
+            margin-bottom: 20px;
+        }
+        #recordList {
+            list-style-type: none;
+            padding: 0;
+        }
+        .record-item {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #debugInfo {
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Appwrite TablesDB API Tester</h1>
+    <p>Test your Appwrite TablesDB API endpoints for the 'dat' table</p>
+
+    <div class="action-buttons">
+        <button id="listButton">List All Rows</button>
+        <button id="clearButton">Clear Results</button>
+    </div>
+
+    <div id="createForm">
+        <h2>Create New Row</h2>
+        <div class="form-group">
+            <label for="jsonData">JSON Data:</label>
+            <textarea id="jsonData" placeholder='{"name": "Test Name", "value": 123, "notes": "Some test notes"}'></textarea>
+        </div>
+        <button id="createButton">Create Row</button>
+    </div>
+
+    <div id="getByIdForm" style="margin-top: 20px;">
+        <h2>Get Row by ID</h2>
+        <div class="form-group">
+            <label for="recordId">Row ID:</label>
+            <input type="text" id="recordId" placeholder="Enter row ID">
+        </div>
+        <button id="getButton">Get Row</button>
+    </div>
+
+    <div id="result" class="result">
+        <h2>API Response</h2>
+        <pre id="responseData"></pre>
+    </div>
+
+    <div id="listContainer" style="margin-top: 20px; display: none;">
+        <h2>Rows List</h2>
+        <ul id="recordList"></ul>
+    </div>
+    
+    <div id="debugInfo">
+        <!-- Debug info will appear here -->
+    </div>
+
+    <script>
+        // Helper function for debugging
+        function debug(message, data = null) {
+            const debugElement = document.getElementById('debugInfo');
+            const timestamp = new Date().toISOString().substring(11, 23);
+            
+            let logMessage = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                console.log(logMessage, data);
+                try {
+                    logMessage += ': ' + JSON.stringify(data);
+                } catch (e) {
+                    logMessage += ': [Object cannot be stringified]';
+                }
+            } else {
+                console.log(logMessage);
+            }
+            
+            debugElement.textContent = logMessage + '\n' + debugElement.textContent;
+        }
+
+        // Show API result
+        function showResult(data, isError = false) {
+            const resultElement = document.getElementById('result');
+            const responseElement = document.getElementById('responseData');
+            
+            resultElement.style.display = 'block';
+            resultElement.classList.toggle('error', isError);
+            
+            try {
+                responseElement.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                responseElement.textContent = String(data);
+            }
+        }
+
+        // Clear results
+        document.getElementById('clearButton').addEventListener('click', function() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('listContainer').style.display = 'none';
+            document.getElementById('recordList').innerHTML = '';
+            debug('Results cleared');
+        });
+
+        // Create a new row
+        document.getElementById('createButton').addEventListener('click', async function() {
+            const jsonInput = document.getElementById('jsonData').value;
+            
+            try {
+                const data = JSON.parse(jsonInput);
+                debug('Creating new row with data', data);
+                
+                const response = await fetch('/api/dat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: jsonInput
+                });
+                
+                const result = await response.json();
+                debug('Create response received', result);
+                
+                showResult(result, !result.success);
+            } catch (error) {
+                debug('Error creating row', error);
+                showResult({ success: false, message: error.message }, true);
+            }
+        });
+
+        // Get a row by ID
+        document.getElementById('getButton').addEventListener('click', async function() {
+            const id = document.getElementById('recordId').value.trim();
+            
+            if (!id) {
+                showResult({ success: false, message: 'Please enter a row ID' }, true);
+                return;
+            }
+            
+            debug('Fetching row with ID', id);
+            
+            try {
+                const response = await fetch(`/api/dat/${id}`);
+                const result = await response.json();
+                
+                debug('Get response received', result);
+                showResult(result, !result.success);
+            } catch (error) {
+                debug('Error getting row', error);
+                showResult({ success: false, message: error.message }, true);
+            }
+        });
+
+        // List all rows
+        document.getElementById('listButton').addEventListener('click', async function() {
+            debug('Listing all rows');
+            
+            try {
+                const response = await fetch('/api/dat');
+                const result = await response.json();
+                
+                debug('List response received', result);
+                showResult(result, !result.success);
+                
+                if (result.success && result.data && result.data.documents) {
+                    const listContainer = document.getElementById('listContainer');
+                    const recordList = document.getElementById('recordList');
+                    
+                    listContainer.style.display = 'block';
+                    recordList.innerHTML = '';
+                    
+                    result.data.documents.forEach(row => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'record-item';
+                        listItem.innerHTML = `
+                            <strong>ID:</strong> ${row.$id} <br>
+                            <strong>Created:</strong> ${new Date(row.$createdAt).toLocaleString()} <br>
+                            <pre>${JSON.stringify(row, null, 2)}</pre>
+                        `;
+                        recordList.appendChild(listItem);
+                    });
+                    
+                    debug(`Displayed ${result.data.documents.length} rows`);
+                }
+            } catch (error) {
+                debug('Error listing rows', error);
+                showResult({ success: false, message: error.message }, true);
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('TablesDB API Tester loaded');
+            
+            // Set a default JSON example
+            document.getElementById('jsonData').value = JSON.stringify({
+                name: "Test Item",
+                value: 100,
+                notes: "Created from TablesDB tester"
+            }, null, 2);
+        });
+    </script>
+</body>
+</html>
