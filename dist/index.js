@@ -16,6 +16,7 @@ const career_routes_1 = __importDefault(require("./routes/career.routes"));
 const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
 const skin_routes_1 = __importDefault(require("./routes/skin.routes"));
 const dat_routes_1 = __importDefault(require("./routes/dat.routes"));
+const symptocare_routes_1 = __importDefault(require("./routes/symptocare.routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Enable CORS for all routes
@@ -38,6 +39,7 @@ app.use("/api/career", career_routes_1.default);
 app.use("/api/chat", chat_routes_1.default);
 app.use("/api/skin", skin_routes_1.default);
 app.use("/api/dat", dat_routes_1.default);
+app.use("/api/symptocare", symptocare_routes_1.default);
 // Serve the index.html file for the root route
 app.get('/', (req, res) => {
     res.sendFile(path_1.default.join(__dirname, '../public/index.html'));

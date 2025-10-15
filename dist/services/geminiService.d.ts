@@ -77,4 +77,36 @@ interface SkinAnalysisResult {
  * Feature 5: Skin condition analysis from image.
  */
 export declare const analyzeSkinCondition: (params: SkinAnalysisParams) => Promise<SkinAnalysisResult>;
+interface SymptomAnalysisParams {
+    symptoms: string;
+    additionalInfo?: {
+        age?: number;
+        gender?: string;
+        existingConditions?: string[];
+        currentMedications?: string[];
+    };
+    userId?: string;
+    timestamp?: string;
+}
+interface SymptomAnalysisResult {
+    extractedSymptoms: Array<{
+        name: string;
+        severity?: string;
+        duration?: string;
+    }>;
+    possibleConditions: Array<{
+        name: string;
+        probability: number;
+        urgency: string;
+        description: string;
+    }>;
+    specialistRecommendation?: string;
+    urgencyLevel: string;
+    recommendations: string[];
+    followUpQuestions?: string[];
+}
+/**
+ * Feature 6: Analyze symptoms and provide health insights.
+ */
+export declare const analyzeSymptoms: (params: SymptomAnalysisParams) => Promise<SymptomAnalysisResult>;
 export {};
