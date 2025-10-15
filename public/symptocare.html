@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SymptoCare.AI - Symptom Analysis</title>
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://careercraft-be.onrender.com;">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -191,8 +192,8 @@
             document.getElementById('result').style.display = 'none';
             
             try {
-                // Make API request
-                const response = await fetch('/api/symptocare/analyze', {
+                // Make API request to the deployed backend
+                const response = await fetch('https://careercraft-be.onrender.com/api/symptocare/analyze', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
